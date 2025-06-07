@@ -30,7 +30,7 @@ public class UserProfileService {
                 .build();
     }
 
-    public void updateUserProfile(UUID uuid, UserProfileRequest request){
+    public UserProfile updateUserProfile(UUID uuid, UserProfileRequest request){
         if(!authClient.userExists(uuid)){
             throw new RuntimeException("User does not exist");
         }
@@ -40,6 +40,7 @@ public class UserProfileService {
         profile.setEmail(request.getEmail());
 
         userProfileRepository.save(profile);
+        return profile;
     }
 
     public void createUserProfile(UserCreatedEvent event){
