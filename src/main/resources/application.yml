@@ -3,8 +3,8 @@ spring:
     name: user-service
   config:
     import:
-      - "configserver:http://localhost:8888"
       - "file:.env[.properties]"
+      - "configserver:http://localhost:8888"
   profiles:
     active: ${PROFILE}
   cloud:

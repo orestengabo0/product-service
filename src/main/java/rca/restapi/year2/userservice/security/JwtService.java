@@ -2,7 +2,6 @@ package rca.restapi.year2.userservice.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -14,8 +13,10 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -50,10 +51,10 @@ public class JwtService {
 
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
-                .setSigningKey(getSigningKey())
+                .verifyWith(getSigningKey())
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     private Boolean isTokenExpired(String token) {
@@ -62,30 +63,54 @@ public class JwtService {
 
     public String generateAccessToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
+        // Extract roles from UserDetails and add to JWT claims
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(authority -> authority.getAuthority().replace("ROLE_", ""))
+                .collect(Collectors.toList());
+        claims.put("roles", roles);
+        log.debug("Generating access token for user: {} with roles: {}", userDetails.getUsername(), roles);
         return createToken(claims, userDetails.getUsername(), accessTokenExpiration);
     }
 
     public String generateRefreshToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
+        // Extract roles from UserDetails and add to JWT claims
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(authority -> authority.getAuthority().replace("ROLE_", ""))
+                .collect(Collectors.toList());
+        claims.put("roles", roles);
         return createToken(claims, userDetails.getUsername(), refreshTokenExpiration);
     }
 
     private String createToken(Map<String, Object> claims, String subject, Long expiration) {
         return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(subject)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .claims(claims)
+                .subject(subject)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(getSigningKey())
                 .compact();
     }
 
     public Boolean validateToken(String token, UserDetails userDetails) {
         try {
             final String username = extractUsername(token);
-            return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+            boolean isValid = (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+            if (isValid) {
+                log.debug("Token validated successfully for user: {}", username);
+            } else {
+                log.warn("Token validation failed for user: {}. Username match: {}, Expired: {}", 
+                        username, username.equals(userDetails.getUsername()), isTokenExpired(token));
+            }
+            return isValid;
+        } catch (io.jsonwebtoken.security.SignatureException e) {
+            log.error("Token validation error: JWT signature does not match. This usually indicates a JWT_SECRET mismatch. Error: {}", e.getMessage());
+            return false;
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            log.warn("Token validation error: Token has expired. Subject: {}", e.getClaims().getSubject());
+            return false;
         } catch (Exception e) {
-            log.error("Token validation error: {}", e.getMessage());
+            log.error("Token validation error: {} - {}", e.getClass().getSimpleName(), e.getMessage(), e);
             return false;
         }
     }

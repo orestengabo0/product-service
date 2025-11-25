@@ -70,6 +70,7 @@ public class AuthenticationService {
                 .role(Role.USER)
                 .status(UserStatus.ACTIVE)
                 .emailVerified(false)
+                .failedLoginAttempts(0)
                 .build();
 
         user = userRepository.save(user);
@@ -86,7 +87,7 @@ public class AuthenticationService {
         return buildAuthResponse(accessToken, refreshToken, user);
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = UnauthorizedException.class)
     public AuthResponse login(LoginRequest request) {
         log.info("Login attempt for user: {}", request.getEmail());
 
@@ -95,6 +96,7 @@ public class AuthenticationService {
 
         // Check if account is locked
         if (!user.isAccountNonLocked()) {
+            log.warn("Login attempt for locked account: {}", user.getEmail());
             throw new UnauthorizedException("Account is locked. Try again later.");
         }
 
@@ -130,9 +132,13 @@ public class AuthenticationService {
 
             if (user.getFailedLoginAttempts() >= maxLoginAttempts) {
                 user.lockAccount(lockoutDurationMinutes);
-                log.warn("Account locked due to failed login attempts: {}", user.getEmail());
+                userRepository.save(user);
+                log.warn("Account locked due to {} failed login attempts: {}", maxLoginAttempts, user.getEmail());
+                throw new UnauthorizedException(
+                        String.format("Account locked due to %d failed login attempts. Please try again in %d minutes.",
+                                maxLoginAttempts, lockoutDurationMinutes)
+                );
             }
-
             userRepository.save(user);
             throw new UnauthorizedException("Invalid credentials");
         }

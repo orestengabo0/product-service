@@ -5,6 +5,7 @@ import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.security.core.userdetails.UserDetails;
 import rca.restapi.year2.userservice.types.Role;
 import rca.restapi.year2.userservice.types.UserStatus;
 
@@ -63,6 +64,7 @@ public class User {
     private Boolean emailVerified = false;
 
     @Column(name = "failed_login_attempts")
+    @Builder.Default
     private Integer failedLoginAttempts = 0;
 
     @Column(name = "account_locked_until")
@@ -106,6 +108,9 @@ public class User {
     }
 
     public void incrementFailedLoginAttempts() {
+        if(this.failedLoginAttempts == null){
+            this.failedLoginAttempts = 0;
+        }
         this.failedLoginAttempts++;
     }
 
