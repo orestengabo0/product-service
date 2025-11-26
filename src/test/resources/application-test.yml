@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: user-service-test
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+  cache:
+    type: simple
+    cache-names: users
+
+jwt:
+  secret: test-secret-key-for-jwt-token-generation-in-test-environment-minimum-256-bits
+  access-token-expiration: 900000
+  refresh-token-expiration: 604800000
+
+security:
+  rate-limit:
+    login-attempts: 5
+    lockout-duration-minutes: 15
+
+logging:
+  level:
+    root: WARN
+    rca.restapi.year2.userservice: DEBUG
+    org.springframework.security: WARN
+
