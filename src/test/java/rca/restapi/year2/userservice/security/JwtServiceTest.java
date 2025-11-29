@@ -1,14 +1,11 @@
 package rca.restapi.year2.userservice.security;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.security.SignatureException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,8 +16,6 @@ import java.util.Date;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("JwtService Unit Tests")
@@ -30,7 +25,7 @@ class JwtServiceTest {
     private JwtService jwtService;
 
     private UserDetails userDetails;
-    private String testSecret = "test-secret-key-for-jwt-token-generation-in-test-environment-minimum-256-bits-required";
+    private String testSecret = "665TOq7nwsni39p7kzhT9QsNaylKOKkayCubSeRj9PE=";
     private Long accessTokenExpiration = 900000L; // 15 minutes
     private Long refreshTokenExpiration = 604800000L; // 7 days
 
